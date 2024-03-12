@@ -4,6 +4,7 @@ import time
 
 import requests
 import typer
+from tqdm import tqdm
 
 from .util import get_signed_params
 
@@ -81,27 +82,14 @@ class Audio:
                 response = requests.get(url=baseUrl, headers=self.headers, stream=True)
 
                 total_size = int(response.headers.get("content-length", 0))
-                temp_size = 0
 
-                with open(file_path, "wb") as f:
+                with open(file_path, "wb") as f, \
+                     tqdm(total=total_size, desc=self.title, unit="iB", unit_scale=True) as bar:
                     for chunk in response.iter_content(chunk_size=1024):
                         if chunk:
                             f.write(chunk)
                             f.flush()
-
-                            temp_size += len(chunk)
-                            done = int(50 * temp_size / total_size)
-                            sys.stdout.write(
-                                "\r[%s%s] %s/%s %s"
-                                % (
-                                    "#" * done,
-                                    "-" * (50 - done),
-                                    temp_size,
-                                    total_size,
-                                    self.title,
-                                )
-                            )
-                            sys.stdout.flush()
+                            bar.update(len(chunk))
 
         except Exception as e:
             typer.echo("Download failed")
