@@ -1,7 +1,11 @@
+import os
+
 import typer
+from typing_extensions import Annotated
 
 from .audio import Audio
 from .fav import Fav
+from .season import Season
 from .user import User
 
 app = typer.Typer()
@@ -36,4 +40,22 @@ def fav(media_id: str, cookies_path: str):
         audio = Audio(bvid)
         audio.download()
 
+    typer.echo("Download complete")
+
+
+@app.command()
+def season(
+    uid: str,
+    sid: str,
+    directory: Annotated[str, typer.Option("-o", "--directory")] = "",
+):
+    sea = Season(uid, sid)
+    sea.get_videos()
+
+    if directory:
+        os.chdir(directory)
+
+    for id in sea.videos:
+        audio = Audio(id)
+        audio.download()
     typer.echo("Download complete")
