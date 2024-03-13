@@ -64,7 +64,7 @@ class Audio:
                 # 如果文件已存在，则跳过下载
                 if os.path.exists(file_path):
                     typer.echo(f"{self.title} already exists, skip for now")
-                    return
+                    continue
 
                 params = get_signed_params(
                     {
