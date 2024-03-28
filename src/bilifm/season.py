@@ -30,12 +30,17 @@ class Season:
             method="get", url=self.season_url, params=params, wbi=True, dm=True
         ).json()
 
-        if res.get("code", -404) != 0:
+        code = res.get("code", -404)
+        if code != 0:
             # uid 错误好像无影响
-            typer.echo(f"Error: uid {self.uid} or sid {self.season_id} not found.")
+            if code == "-404":
+                typer.echo(f"Error: uid {self.uid} or sid {self.season_id} error.")
+            else:
+                type.echo("Error: unknown error")
+            typer.echo(f"code: {res['code']}")
             if res.get("message", None):
                 typer.echo(f"msg: {res['message']}")
-            return
+            return False
 
         self.total = res["data"]["meta"]["total"]
         self.name = res["data"]["meta"]["name"]
@@ -44,8 +49,10 @@ class Season:
         for i in range(1, max_pn + 2):
             params["page_num"] = i
 
-            response = request(
+            res = request(
                 method="get", url=self.season_url, params=params, wbi=True, dm=True
-            )
-            bvids = [d["bvid"] for d in response.json()["data"]["archives"]]
+            ).json()
+            bvids = [d["bvid"] for d in res["data"]["archives"]]
             self.videos.extend(bvids)
+
+        return True
