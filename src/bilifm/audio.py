@@ -18,6 +18,7 @@ class Audio:
     headers = {}
 
     def __init__(self, bvid: str) -> None:
+        self.files = []
         if bvid is None:
             raise ValueError("bvid is None")
 
@@ -60,7 +61,7 @@ class Audio:
 
                 if len(file_path) > 255:
                     file_path = file_path[:255]
-
+                self.files.append(file_path)
                 # 如果文件已存在，则跳过下载
                 if os.path.exists(file_path):
                     typer.echo(f"{self.title} already exists, skip for now")

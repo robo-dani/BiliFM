@@ -1,5 +1,4 @@
 """download bilibili season archive, 视频合集下载"""
-
 import typer
 
 from .util import request
@@ -27,16 +26,16 @@ class Season:
         }
 
         res = request(
-            method="get", url=self.season_url, params=params, wbi=True, dm=True
+            method="get", url=self.season_url, params=params, wbi=True
         ).json()
 
         code = res.get("code", -404)
         if code != 0:
             # uid 错误好像无影响
-            if code == "-404":
+            if code == -404:
                 typer.echo(f"Error: uid {self.uid} or sid {self.season_id} error.")
             else:
-                type.echo("Error: unknown error")
+                typer.echo("Error: unknown error")
             typer.echo(f"code: {res['code']}")
             if res.get("message", None):
                 typer.echo(f"msg: {res['message']}")
@@ -45,13 +44,16 @@ class Season:
         self.total = res["data"]["meta"]["total"]
         self.name = res["data"]["meta"]["name"]
 
-        max_pn = self.total // 50
+        max_pn = self.total // self.page_size
         for i in range(1, max_pn + 2):
             params["page_num"] = i
 
             res = request(
-                method="get", url=self.season_url, params=params, wbi=True, dm=True
+                method="get", url=self.season_url, params=params, wbi=True
             ).json()
+            if res.get("code") != 0:
+                print(f"获取{(i-1)*self.page_size} - {i*self.page_size}失败")
+                continue
             bvids = [d["bvid"] for d in res["data"]["archives"]]
             self.videos.extend(bvids)
 
