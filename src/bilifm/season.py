@@ -1,7 +1,13 @@
 """download bilibili season archive, 视频合集下载"""
+
 import typer
 
 from .util import request
+
+headers: dict[str, str] = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Referer": "https://www.bilibili.com",
+}
 
 
 class Season:
@@ -26,7 +32,7 @@ class Season:
         }
 
         res = request(
-            method="get", url=self.season_url, params=params, wbi=True
+            method="get", url=self.season_url, params=params, headers=headers
         ).json()
 
         code = res.get("code", -404)
@@ -49,7 +55,7 @@ class Season:
             params["page_num"] = i
 
             res = request(
-                method="get", url=self.season_url, params=params, wbi=True
+                method="get", url=self.season_url, params=params, headers=headers
             ).json()
             if res.get("code") != 0:
                 print(f"获取{(i-1)*self.page_size} - {i*self.page_size}失败")
