@@ -172,6 +172,31 @@ def request(
 
     return requests.request(method, url, params=params, headers=headers, **kwargs)
 
+def retry(func):
+    """
+    Decorator that retries the wrapped request function up to 3 times if it encounters an error.
+
+    Args:
+        func (callable): A request function that returns a request.Response.
+    """
+    # @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # 需要参数化吗?
+        for _ in range(3):
+            res = func(*args, **kwargs)
+            data = res.json()
+            if data.get("code", -404) != 0:
+                typer.echo("request encounter an error: code {}, msg {}.".format(
+                    data.get("code", -404),
+                    data.get("message", "")
+                ))
+                typer.echo("retrying....")
+                time.sleep(0.5)
+            else:
+                return res
+        return res
+    return wrapper
+
 
 def change_directory(directory: str):
     if directory:

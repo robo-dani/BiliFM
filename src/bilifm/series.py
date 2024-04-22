@@ -1,7 +1,7 @@
 """download bilibili video series, 视频列表"""
 
 import typer
-from .util import request
+from .util import request, retry
 
 headers: dict[str, str] = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
@@ -28,19 +28,18 @@ class Series:
             "current_id": self.uid,
         }
 
+        @retry
         def send_request():
-            res =       request(
+            return request(
                 method="get", url=self.series_url, params=params, headers=headers
-            ).json()
-            if res.get("code", -404) != 0:
-                typer.echo(res)
-                return None
-            return res
-        res = send_request()
-        if res is None:
+            )
+
+        res = send_request().json()
+        if res.get("code", -404) != 0:
+            typer.echo("Get series audio failed")
             return False
 
-        self.total = res['data']["page"]["total"]
+        self.total = res["data"]["page"]["total"]
         while True:
             bvids = [ar["bvid"] for ar in res["data"]["archives"]]
             self.videos.extend(bvids)
@@ -50,12 +49,14 @@ class Series:
                 break
 
             params["pn"] += 1
-            res = send_request()
+            res = send_request().json()
 
-            if res is None:
-                typer.echo("encounter error, skip audios from {} to {}".format(
-                    (params["pn"] -1) * self.page_size,
-                    params["pn"] * self.page_size,
-                ))
+            if res.get("code", -404) != 0:
+                typer.echo(
+                    "encounter error, skip audios from {} to {}".format(
+                        (params["pn"] - 1) * self.page_size,
+                        params["pn"] * self.page_size,
+                    )
+                )
 
         return True
