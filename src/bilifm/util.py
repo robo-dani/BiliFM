@@ -2,8 +2,10 @@ import os
 import random
 import time
 import urllib.parse
+from enum import Enum
 from functools import reduce
 from hashlib import md5
+from typing import Callable
 
 import requests
 import typer
@@ -94,6 +96,24 @@ mixinKeyEncTab = [
     44,
     52,
 ]
+
+
+# 音质映射到具体值
+audio_quality_map = {
+    "64": 30216,
+    "132": 30232,
+    "192": 30280,
+}
+
+
+class AudioQualityEnums(str, Enum):
+    k64 = "64"
+    k132 = "132"
+    k192 = "192"
+
+    @property
+    def quality_id(self):
+        return audio_quality_map[self._value_]
 
 
 def getMixinKey(orig: str):
@@ -217,3 +237,30 @@ def check_path(path: str):
 
 Directory = Annotated[str, typer.Option("-o", "--directory", callback=change_directory)]
 Path = typer.Argument(callback=check_path)
+
+
+class Retry:
+    """Retry decorator"""
+
+    def __init__(self, response_succeed, handle_error_response, total=3) -> None:
+        self.total = total
+        self.__response_succeed = response_succeed
+        self.__handle_error_response = handle_error_response
+        pass
+
+    def __call__(self, request_func: Callable) -> Callable:
+        def wrapped_request(*args, **kwargs):
+            for _ in range(self.total):
+                res = request_func(*args, **kwargs)
+                if self.__response_succeed(res):
+                    return res
+            self.__handle_error_response(res)
+            return None
+
+        return wrapped_request
+
+
+AudioQuality = Annotated[
+    AudioQualityEnums,
+    typer.Option("--quality", "-q", help="audio quality", case_sensitive=False),
+]
